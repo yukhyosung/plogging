@@ -388,7 +388,7 @@ function startTracking(){
   $('t-start').textContent=ftime(startTime);
   $('btn-start').disabled=true;$('btn-end').disabled=false;$('rdot').className='rdot on';
   if(timerRef)clearInterval(timerRef);
-  timerRef=setInterval(()=>{elapsed++;const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%10===0)save();},1000);
+  timerRef=setInterval(()=>{elapsed=Math.round((Date.now()-startTime.getTime())/1000);const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%10===0)save();},1000);
   toast('▶ 플로깅 시작! 화이팅 🌿');save();
 }
 
@@ -442,7 +442,7 @@ function goBack(){
   running=true;endTime=null;
   $('btn-start').disabled=true;$('btn-end').disabled=false;$('rdot').className='rdot on';
   show('session');
-  timerRef=setInterval(()=>{elapsed++;const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%10===0)save();},1000);
+  timerRef=setInterval(()=>{elapsed=Math.round((Date.now()-startTime.getTime())/1000);const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%10===0)save();},1000);
   startGPS();
 }
 
