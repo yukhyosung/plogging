@@ -66,7 +66,7 @@ html,body{font-family:var(--sans);background:var(--bg);color:var(--text);height:
 .trash-sec{background:#0c1f16;border-top:1px solid rgba(255,255,255,.07);padding:8px 12px 6px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .ts-lbl{font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;flex-shrink:0}
 .tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex:1}
-.tbtn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 2px}
+.tbtn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:10px 2px 8px}
 .tbtn:active{transform:scale(.88)}
 .tbtn.pop{animation:pop .3s ease}
 @keyframes pop{35%{transform:scale(1.18);background:rgba(0,185,122,.2);border-color:rgba(0,185,122,.6)}}
@@ -122,20 +122,20 @@ html,body{font-family:var(--sans);background:var(--bg);color:var(--text);height:
 .ph-ph .tx{font-size:12px;color:var(--sub);font-weight:500}
 .ph-ph .sb{font-size:10px;color:#a0bfaf}
 #photo-input{display:none}
-.total{margin:4px 14px;background:linear-gradient(135deg,var(--green),var(--teal));border-radius:10px;padding:7px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.total{margin:4px 14px;background:linear-gradient(135deg,var(--green),var(--teal));border-radius:10px;padding:6px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .total .tl{font-size:12px;color:rgba(255,255,255,.85);font-weight:600}
 .total .tv{font-size:20px;font-weight:900;font-family:var(--mono);color:white}
-.bars-card{margin:4px 14px 0;background:var(--green-light);border:1px solid var(--border);border-radius:12px;padding:8px 14px;flex:1;overflow:hidden}
-.bars-title{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
-.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.bars-card{margin:4px 14px 0;background:var(--green-light);border:1px solid var(--border);border-radius:12px;padding:7px 12px;flex:1;overflow:hidden}
+.bars-title{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.bar-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
 .bar-row:last-child{margin-bottom:0}
-.bar-lbl{font-size:11px;color:var(--sub);width:66px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar-track{flex:1;height:7px;background:rgba(0,180,120,.12);border-radius:4px;overflow:hidden}
-.bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--teal));border-radius:4px;transition:width 1s ease}
-.bar-n{font-size:11px;font-family:var(--mono);width:16px;text-align:right}
-.cp-foot{margin:4px 14px 2px;display:flex;justify-content:space-between;padding:7px 12px;background:var(--green-light);border-radius:9px;border:1px solid var(--border);flex-shrink:0;font-size:11px}
+.bar-lbl{font-size:10px;color:var(--sub);width:62px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:6px;background:rgba(0,180,120,.12);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--teal));border-radius:3px;transition:width 1s ease}
+.bar-n{font-size:10px;font-family:var(--mono);width:16px;text-align:right}
+.cp-foot{margin:3px 14px 2px;display:flex;justify-content:space-between;padding:5px 12px;background:var(--green-light);border-radius:9px;border:1px solid var(--border);flex-shrink:0;font-size:11px}
 .cp-foot b{color:var(--green-dark);font-weight:700}
-.cp-acts{padding:4px 14px 14px;display:flex;gap:9px;border-top:1px solid var(--border);flex-shrink:0}
+.cp-acts{padding:4px 14px 12px;display:flex;gap:9px;border-top:1px solid var(--border);flex-shrink:0}
 
 /* MODAL - 종류별 수정 */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;align-items:center;justify-content:center;padding:20px}
@@ -251,7 +251,7 @@ html,body{font-family:var(--sans);background:var(--bg);color:var(--text);height:
   <div class="cp-hdr">
     <div class="cp-hdr-top">
       <div class="cp-hdr-left">
-        <div class="cap-app">⭐ 스타줍쓰 — 쓰레기 인증</div>
+        <div class="cap-app">⭐ 스타줍쓰 — 활동 인증</div>
         <div class="cap-name" id="cp-name"></div>
       </div>
       <div class="cp-hdr-right">
@@ -368,7 +368,7 @@ function buildGrid(){
   TYPES.forEach(t=>{
     const b=document.createElement('button');
     b.className='tbtn';b.id='tb-'+t.id;
-    b.innerHTML=`<span class="ti" style="${t.id==="cig"?"margin-top:0":"margin-top:5px"}">${t.icon}</span><span class="tn">${t.name}</span><span class="tc" id="tc-${t.id}">0</span>`;
+    b.innerHTML=`<span class="ti" style="">${t.icon}</span><span class="tn">${t.name}</span><span class="tc" id="tc-${t.id}">0</span>`;
     b.onclick=()=>addT(t,b);
     g.appendChild(b);
   });
