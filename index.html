@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>스타줍쓰 플로깅</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --green:#00b87a;--teal:#00c4a7;--green-dark:#009060;
+  --green-light:#e2f5ec;--bg:#f2f8f5;--white:#fff;
+  --text:#0c1f16;--sub:#4e7a63;--border:#c8e8d8;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans KR',sans-serif;
+}
+html,body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100%;overflow:hidden}
+.screen{display:none;position:fixed;inset:0;flex-direction:column;background:var(--bg)}
+.screen.active{display:flex}
+
+/* HOME */
+#home{overflow-y:auto;padding:50px 24px 40px;align-items:center}
+.logo{text-align:center;margin-bottom:28px}
+.logo-icon{font-size:52px;margin-bottom:8px}
+.logo-title{font-size:30px;font-weight:900;letter-spacing:-1px}
+.logo-title b{color:var(--green)}
+.logo-sub{font-size:13px;color:var(--sub);margin-top:4px}
+.warn-box{width:100%;background:#fff8e6;border:1.5px solid #f0c040;border-radius:12px;padding:13px 16px;margin-bottom:20px;font-size:13px;color:#7a5000;font-weight:600;line-height:1.5}
+.warn-box span{font-weight:400;font-size:12px;display:block;margin-top:2px;color:#a07000}
+.how-box{width:100%;background:var(--white);border-radius:14px;border:1px solid var(--border);padding:16px;margin-bottom:20px}
+.how-title{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.how-step{display:flex;align-items:flex-start;gap:10px;font-size:13px;margin-bottom:9px}
+.how-step:last-child{margin-bottom:0}
+.sn{width:20px;height:20px;border-radius:50%;background:var(--green);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.name-label{width:100%;font-size:13px;font-weight:700;color:var(--sub);margin-bottom:7px;display:block}
+.name-input{width:100%;padding:13px 15px;background:var(--white);border:1.5px solid var(--border);border-radius:12px;font-family:var(--sans);font-size:16px;font-weight:500;color:var(--text);outline:none;margin-bottom:16px}
+.name-input:focus{border-color:var(--green)}
+.name-input::placeholder{color:#b0cfc0}
+.begin-btn{width:100%;background:linear-gradient(135deg,var(--green),var(--teal));border:none;border-radius:14px;padding:17px;font-family:var(--sans);font-size:16px;font-weight:700;color:white;cursor:pointer}
+.begin-btn:disabled{opacity:.4;cursor:not-allowed}
+.begin-btn:active{opacity:.85}
+
+/* SESSION */
+#session{background:#0c1f16}
+.topbar{background:#0c1f16;padding:12px 14px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-name{font-size:13px;font-weight:700;color:white;display:flex;align-items:center;gap:7px}
+.rdot{width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0}
+.rdot.on{background:#ff4444;animation:rb 1.2s infinite}
+@keyframes rb{0%,100%{opacity:1}50%{opacity:.2}}
+.gps{font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.55)}
+.gps.ok{background:rgba(0,185,122,.2);color:#5fffc0}
+.gps.warn{background:rgba(255,200,50,.15);color:#ffd060}
+#map{flex:0 0 28vh;min-height:160px;max-height:200px;position:relative;z-index:1}
+.leaflet-container{background:#1a2e25!important}
+.leaflet-tile{filter:brightness(.65) saturate(.5) hue-rotate(110deg)}
+.map-overlay{position:absolute;bottom:8px;left:8px;z-index:999;background:rgba(10,26,18,.9);border:1px solid rgba(0,185,122,.3);border-radius:8px;padding:5px 9px}
+.mo-row{display:flex;align-items:center;gap:5px;margin-bottom:2px}
+.mo-row:last-child{margin-bottom:0}
+.mo-l{font-size:9px;color:rgba(255,255,255,.4);width:24px}
+.mo-v{font-size:11px;font-family:var(--mono);color:white}
+.mo-v.live{color:#5fffc0}
+.stats-bar{background:#0c1f16;padding:7px 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex-shrink:0}
+.sc{background:rgba(255,255,255,.07);border-radius:10px;padding:8px 6px;text-align:center}
+.sc .v{font-family:var(--mono);font-size:18px;color:#5fffc0;line-height:1}
+.sc .l{font-size:9px;color:rgba(255,255,255,.3);margin-top:3px;text-transform:uppercase}
+.trash-sec{background:#0c1f16;border-top:1px solid rgba(255,255,255,.07);padding:8px 12px 6px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.ts-lbl{font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;flex-shrink:0}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex:1}
+.tbtn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px}
+.tbtn:active{transform:scale(.88)}
+.tbtn.pop{animation:pop .3s ease}
+@keyframes pop{35%{transform:scale(1.18);background:rgba(0,185,122,.2);border-color:rgba(0,185,122,.6)}}
+.tbtn .ti{font-size:22px}
+.tbtn .tc{font-family:var(--mono);font-size:15px;color:#5fffc0;font-weight:500}
+.tbtn .tn{font-size:9px;color:rgba(255,255,255,.3);text-align:center;line-height:1.2}
+.btns{background:#0c1f16;padding:8px 12px 22px;display:flex;gap:8px;flex-shrink:0}
+.sbtn{flex:1;border:none;border-radius:14px;padding:14px;font-family:var(--sans);font-size:15px;font-weight:700;color:white;cursor:pointer}
+.sbtn:active{opacity:.8}
+.sbtn:disabled{opacity:.3;cursor:not-allowed}
+.sbtn.start{background:linear-gradient(135deg,#00b87a,#00c4a7)}
+.sbtn.end{background:linear-gradient(135deg,#e05555,#c43b3b)}
+
+/* CAPTURE ROUTE */
+#capture-route{overflow-y:auto}
+.cap-hdr{background:linear-gradient(135deg,var(--green),var(--teal));padding:16px 18px 14px;color:white;flex-shrink:0}
+.cap-app{font-size:11px;opacity:.85;margin-bottom:3px}
+.cap-name{font-size:20px;font-weight:900;letter-spacing:-.5px;margin-bottom:1px}
+.cap-date{font-size:12px;opacity:.85}
+.time-row{display:flex;align-items:center;gap:6px;margin-top:8px;background:rgba(255,255,255,.18);border-radius:8px;padding:7px 10px}
+.ti{flex:1;text-align:center}
+.ti .tl{font-size:9px;opacity:.75;text-transform:uppercase}
+.ti .tv{font-size:13px;font-weight:700;font-family:var(--mono);margin-top:2px}
+.tsep{color:rgba(255,255,255,.5);font-size:13px}
+.cap-loc{margin:8px 14px 4px;font-size:12px;color:var(--sub);font-weight:500}
+.map-card{margin:0 14px;border-radius:12px;overflow:hidden;border:1.5px solid var(--border)}
+#cap-map{height:240px}
+.cap-stats{display:flex;margin:10px 14px;gap:10px}
+.cstat{flex:1;background:var(--green-light);border-radius:12px;padding:12px 8px;text-align:center;border:1px solid var(--border)}
+.cstat.edit{border:2px dashed var(--green);cursor:pointer}
+.cstat .sv{font-family:var(--mono);font-size:22px;color:var(--green-dark)}
+.cstat .sl{font-size:10px;color:var(--sub);margin-top:3px;text-transform:uppercase}
+.cstat.edit .sl::after{content:' ✏️'}
+.cap-foot{margin:0 14px 12px;display:flex;justify-content:space-between;padding:9px 12px;background:var(--green-light);border-radius:9px;border:1px solid var(--border);font-size:11px}
+.cap-foot b{color:var(--green-dark);font-weight:700}
+.cap-acts{padding:10px 14px 28px;display:flex;gap:9px;border-top:1px solid var(--border);background:var(--bg)}
+.back-btn{flex:1;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:13px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--sub);cursor:pointer}
+.next-btn{flex:2;background:linear-gradient(135deg,var(--green),var(--teal));border:none;border-radius:14px;padding:13px;font-family:var(--sans);font-size:14px;font-weight:700;color:white;cursor:pointer}
+
+/* CAPTURE PHOTO - 헤더 한줄로 */
+#capture-photo{overflow:hidden}
+.cp-hdr{background:linear-gradient(135deg,var(--green),var(--teal));padding:10px 16px;color:white;flex-shrink:0}
+.cp-hdr-top{display:flex;align-items:center;justify-content:space-between}
+.cp-hdr-left .cap-app{font-size:10px;opacity:.8;margin-bottom:1px}
+.cp-hdr-left .cap-name{font-size:17px;font-weight:900;letter-spacing:-.5px}
+.cp-hdr-right{text-align:right}
+.cp-hdr-right .cap-date{font-size:11px;opacity:.85}
+.cp-hdr-right .cap-loc-inline{font-size:10px;opacity:.75;margin-top:2px}
+.photo-box{margin:6px 14px 0;height:175px;border-radius:10px;overflow:hidden;border:2px dashed var(--border);background:var(--green-light);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.photo-box img{width:100%;height:100%;object-fit:cover;display:none}
+.ph-ph{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ph-ph .ic{font-size:30px;opacity:.4}
+.ph-ph .tx{font-size:12px;color:var(--sub);font-weight:500}
+.ph-ph .sb{font-size:10px;color:#a0bfaf}
+#photo-input{display:none}
+.total{margin:6px 14px;background:linear-gradient(135deg,var(--green),var(--teal));border-radius:10px;padding:7px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.total .tl{font-size:12px;color:rgba(255,255,255,.85);font-weight:600}
+.total .tv{font-size:20px;font-weight:900;font-family:var(--mono);color:white}
+.bars-card{margin:6px 14px 0;background:var(--green-light);border:1px solid var(--border);border-radius:12px;padding:10px 14px;flex:1;overflow:hidden}
+.bars-title{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bar-row:last-child{margin-bottom:0}
+.bar-lbl{font-size:11px;color:var(--sub);width:66px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:7px;background:rgba(0,180,120,.12);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--teal));border-radius:4px;transition:width 1s ease}
+.bar-n{font-size:11px;font-family:var(--mono);width:16px;text-align:right}
+.cp-foot{margin:6px 14px 4px;display:flex;justify-content:space-between;padding:7px 12px;background:var(--green-light);border-radius:9px;border:1px solid var(--border);flex-shrink:0;font-size:11px}
+.cp-foot b{color:var(--green-dark);font-weight:700}
+.cp-acts{padding:6px 14px 16px;display:flex;gap:9px;border-top:1px solid var(--border);flex-shrink:0}
+
+/* MODAL - 종류별 수정 */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;align-items:center;justify-content:center;padding:20px}
+.modal-bg.on{display:flex}
+.modal{background:white;border-radius:20px;padding:20px;width:100%;max-width:340px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.modal p{font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.5}
+.modal-type-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.modal-type-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border)}
+.modal-type-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0}
+.modal-type-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.modal-type-ctrl{display:flex;align-items:center;gap:8px}
+.ctrl-btn{width:28px;height:28px;border:none;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.ctrl-btn:active{background:var(--green);color:white}
+.ctrl-num{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text);min-width:24px;text-align:center}
+.modal-total{background:var(--green-light);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-total-lbl{font-size:13px;color:var(--sub);font-weight:600}
+.modal-total-val{font-size:20px;font-family:var(--mono);font-weight:700;color:var(--green-dark)}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;border:none;border-radius:10px;padding:12px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer}
+.modal-btns .mc{background:var(--bg);border:1.5px solid var(--border);color:var(--sub)}
+.modal-btns .mo{background:linear-gradient(135deg,var(--green),var(--teal));color:white}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#0c1f16;color:#5fffc0;border:1px solid rgba(0,185,122,.3);padding:9px 18px;border-radius:24px;font-size:12px;font-weight:600;opacity:0;transition:all .25s;pointer-events:none;z-index:9999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.my-dot{width:14px;height:14px;background:var(--green);border:2.5px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(0,185,122,.25);animation:dp 2s infinite}
+@keyframes dp{50%{box-shadow:0 0 0 8px rgba(0,185,122,.08)}}
+.dot-cap{width:12px;height:12px;border:2px solid white;border-radius:50%}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div class="logo">
+    <div class="logo-icon">⭐</div>
+    <div class="logo-title"><b>스타줍쓰</b></div>
+    <div class="logo-sub">걸으며 줍는 작은 실천</div>
+  </div>
+  <div class="warn-box">
+    ⚠️ 탭 닫으면 기록이 사라져요!
+    <span>카톡 갔다오거나 화면 꺼지는 건 괜찮아요</span>
+  </div>
+  <div class="how-box">
+    <div class="how-title">사용 방법</div>
+    <div class="how-step"><div class="sn">1</div><div>이름 입력 후 <b>입장</b></div></div>
+    <div class="how-step"><div class="sn">2</div><div><b>▶ 시작</b> 누르면 GPS + 타이머 시작</div></div>
+    <div class="how-step"><div class="sn">3</div><div>쓰레기 주울 때마다 종류 <b>탭</b></div></div>
+    <div class="how-step"><div class="sn">4</div><div><b>🏁 종료</b> → 경로 캡쳐 → 사진 인증 캡쳐</div></div>
+  </div>
+  <span class="name-label">참여자 이름</span>
+  <input class="name-input" id="name-input" type="text" placeholder="예: 홍길동" maxlength="10" autocomplete="off">
+  <button class="begin-btn" id="begin-btn" onclick="enterSession()" disabled>입장하기 →</button>
+</div>
+
+<!-- SESSION -->
+<div id="session" class="screen">
+  <div class="topbar">
+    <div class="topbar-name"><div class="rdot" id="rdot"></div><span id="sess-name">플로깅 준비중</span></div>
+    <div class="gps" id="gps-badge">GPS 대기</div>
+  </div>
+  <div id="map">
+    <div class="map-overlay">
+      <div class="mo-row"><span class="mo-l">시작</span><span class="mo-v" id="t-start">--:--:--</span></div>
+      <div class="mo-row"><span class="mo-l">경과</span><span class="mo-v live" id="t-elapsed">00:00:00</span></div>
+    </div>
+  </div>
+  <div class="stats-bar">
+    <div class="sc"><div class="v" id="s-time">00:00:00</div><div class="l">소요시간</div></div>
+    <div class="sc"><div class="v" id="s-dist">0.00</div><div class="l">거리 km</div></div>
+    <div class="sc"><div class="v" id="s-count">0</div><div class="l">수집 개수</div></div>
+  </div>
+  <div class="trash-sec">
+    <div class="ts-lbl">쓰레기 종류 — 탭해서 기록</div>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+  <div class="btns">
+    <button class="sbtn start" id="btn-start" onclick="startTracking()">▶ 시작</button>
+    <button class="sbtn end" id="btn-end" onclick="endSession()" disabled>🏁 종료</button>
+  </div>
+</div>
+
+<!-- CAPTURE ROUTE -->
+<div id="capture-route" class="screen">
+  <div class="cap-hdr">
+    <div class="cap-app">⭐ 스타줍쓰 플로깅</div>
+    <div class="cap-name" id="cr-name"></div>
+    <div class="cap-date" id="cr-date"></div>
+    <div class="time-row">
+      <div class="ti"><div class="tl">시작</div><div class="tv" id="cr-start"></div></div>
+      <div class="tsep">→</div>
+      <div class="ti"><div class="tl">종료</div><div class="tv" id="cr-end"></div></div>
+      <div class="tsep">|</div>
+      <div class="ti"><div class="tl">소요</div><div class="tv" id="cr-dur"></div></div>
+    </div>
+  </div>
+  <div class="cap-loc" id="cr-loc"></div>
+  <div class="map-card"><div id="cap-map"></div></div>
+  <div class="cap-stats">
+    <div class="cstat"><div class="sv" id="cr-dist"></div><div class="sl">거리 km</div></div>
+    <div class="cstat edit" onclick="editCount()"><div class="sv" id="cr-count"></div><div class="sl">수집 개수</div></div>
+  </div>
+  <div class="cap-foot"><span id="cr-fdate"></span><b>스타줍쓰</b></div>
+  <div class="cap-acts">
+    <button class="back-btn" onclick="goBack()">← 다시</button>
+    <button class="next-btn" onclick="goPhoto()">다음: 사진 인증 →</button>
+  </div>
+</div>
+
+<!-- CAPTURE PHOTO -->
+<div id="capture-photo" class="screen">
+  <div class="cp-hdr">
+    <div class="cp-hdr-top">
+      <div class="cp-hdr-left">
+        <div class="cap-app">⭐ 스타줍쓰 — 쓰레기 인증</div>
+        <div class="cap-name" id="cp-name"></div>
+      </div>
+      <div class="cp-hdr-right">
+        <div class="cap-date" id="cp-date"></div>
+        <div class="cap-loc-inline" id="cp-loc"></div>
+      </div>
+    </div>
+  </div>
+  <div class="photo-box" id="photo-box" onclick="document.getElementById('photo-input').click()">
+    <img id="photo-img" alt="">
+    <div class="ph-ph" id="ph-ph">
+      <div class="ic">📷</div>
+      <div class="tx">수집한 쓰레기 사진을 올려주세요</div>
+      <div class="sb">갤러리에서 선택 (1장)</div>
+    </div>
+  </div>
+  <input type="file" accept="image/*" id="photo-input" onchange="onPhoto(event)">
+  <div class="total">
+    <span class="tl">총 수집 쓰레기</span>
+    <span class="tv" id="cp-total">0개</span>
+  </div>
+  <div class="bars-card">
+    <div class="bars-title">종류별 수집량</div>
+    <div id="cp-bars"></div>
+  </div>
+  <div class="cp-foot"><span id="cp-fdate"></span><b>스타줍쓰</b></div>
+  <div class="cp-acts cap-acts">
+    <button class="back-btn" onclick="show('capture-route')">← 경로</button>
+    <button class="next-btn" onclick="goHome()">🏠 홈으로</button>
+  </div>
+</div>
+
+<!-- MODAL: 종류별 수정 -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>수집 개수 수정</h3>
+    <p>종류별 개수를 조정하면 총 개수가 자동으로 계산돼요</p>
+    <div class="modal-type-grid" id="modal-grid"></div>
+    <div class="modal-total">
+      <span class="modal-total-lbl">총 수집 개수</span>
+      <span class="modal-total-val" id="modal-total">0</span>
+    </div>
+    <div class="modal-btns">
+      <button class="mc" onclick="closeModal()">취소</button>
+      <button class="mo" onclick="saveModal()">확인</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const TYPES=[
+  {id:'cig',icon:'🚬',name:'담배꽁초'},
+  {id:'paper',icon:'📄',name:'종이'},
+  {id:'pet',icon:'♻️',name:'플라스틱'},
+  {id:'can',icon:'🥫',name:'캔/고철'},
+  {id:'glass',icon:'🍶',name:'유리'},
+  {id:'vinyl',icon:'🛍️',name:'비닐'},
+  {id:'styro',icon:'📦',name:'스티로폼'},
+  {id:'etc',icon:'🗞️',name:'기타'},
+];
+
+let name='',running=false;
+let counts=resetCounts();
+let path=[],distM=0,elapsed=0;
+let startTime=null,endTime=null;
+let timerRef=null,watchId=null;
+let map=null,poly=null,capMap=null,myMarker=null;
+let lastPos=null,locName='';
+// 수정된 counts (modal에서 수정한 값, null이면 원본 counts 사용)
+let editedCounts=null;
+
+function resetCounts(){return Object.fromEntries(TYPES.map(t=>[t.id,0]));}
+function activeCounts(){return editedCounts||counts;}
+function total(){return Object.values(activeCounts()).reduce((a,b)=>a+b,0);}
+
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');}
+function toast(msg,d=2200){const e=$('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),d);}
+function fmt(s){return[Math.floor(s/3600),Math.floor((s%3600)/60),s%60].map(n=>String(n).padStart(2,'0')).join(':');}
+function ftime(d){return d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});}
+function fdate(d){return d.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});}
+function hdist(a,b){
+  const R=6371000,f=(b.lat-a.lat)*Math.PI/180,g=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(f/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(g/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function save(){
+  try{localStorage.setItem('sj',JSON.stringify({name,counts,path,distM,elapsed,startTime:startTime?startTime.toISOString():null,locName,running,editedCounts}));}catch(e){}
+}
+function clearSave(){try{localStorage.removeItem('sj');}catch(e){}}
+
+$('name-input').addEventListener('input',e=>{name=e.target.value.trim();$('begin-btn').disabled=!name;});
+
+function enterSession(){
+  name=$('name-input').value.trim();
+  if(!name){toast('이름을 입력해주세요');return;}
+  counts=resetCounts();path=[];distM=0;elapsed=0;
+  startTime=null;endTime=null;running=false;
+  lastPos=null;locName='';editedCounts=null;
+  if(timerRef){clearInterval(timerRef);timerRef=null;}
+  if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;}
+  $('sess-name').textContent=name+'님의 플로깅';
+  $('t-start').textContent='--:--:--';$('t-elapsed').textContent='00:00:00';
+  $('s-time').textContent='00:00:00';$('s-dist').textContent='0.00';$('s-count').textContent='0';
+  $('btn-start').disabled=false;$('btn-end').disabled=true;$('rdot').className='rdot';
+  buildGrid();show('session');initMap();startGPS();
+}
+
+function buildGrid(){
+  const g=$('tgrid');g.innerHTML='';
+  TYPES.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='tbtn';b.id='tb-'+t.id;
+    b.innerHTML=`<span class="ti">${t.icon}</span><span class="tc" id="tc-${t.id}">0</span><span class="tn">${t.name}</span>`;
+    b.onclick=()=>addT(t,b);
+    g.appendChild(b);
+  });
+}
+function addT(t,btn){
+  if(!running){toast('▶ 시작을 먼저 눌러주세요!');return;}
+  counts[t.id]++;editedCounts=null;
+  $('tc-'+t.id).textContent=counts[t.id];
+  $('s-count').textContent=total();
+  btn.classList.remove('pop');void btn.offsetWidth;btn.classList.add('pop');
+  toast(`${t.icon} ${t.name} +1`);save();
+}
+
+function startTracking(){
+  if(running)return;
+  running=true;startTime=new Date();
+  $('t-start').textContent=ftime(startTime);
+  $('btn-start').disabled=true;$('btn-end').disabled=false;$('rdot').className='rdot on';
+  if(timerRef)clearInterval(timerRef);
+  timerRef=setInterval(()=>{elapsed++;const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%10===0)save();},1000);
+  toast('▶ 플로깅 시작! 화이팅 🌿');save();
+}
+
+function initMap(){
+  if(map){map.remove();map=null;myMarker=null;}
+  map=L.map('map',{zoomControl:false,attributionControl:false}).setView([37.5665,126.978],16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  poly=L.polyline([],{color:'#00e896',weight:5,opacity:.9}).addTo(map);
+}
+function startGPS(){
+  if(!navigator.geolocation){$('gps-badge').textContent='GPS 불가';return;}
+  if(watchId!=null)navigator.geolocation.clearWatch(watchId);
+  watchId=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+}
+function onPos(p){
+  const{latitude:lat,longitude:lng,accuracy:acc}=p.coords;
+  const b=$('gps-badge');
+  if(acc<20){b.textContent=`±${Math.round(acc)}m`;b.className='gps ok';}
+  else if(acc<50){b.textContent=`±${Math.round(acc)}m`;b.className='gps warn';}
+  else{b.textContent=`±${Math.round(acc)}m`;b.className='gps';}
+  const cur={lat,lng};
+  if(running&&lastPos){const d=hdist(lastPos,cur);if(d>2&&d<300){distM+=d;$('s-dist').textContent=(distM/1000).toFixed(2);}}
+  lastPos=cur;
+  if(running){path.push(cur);poly.addLatLng([lat,lng]);}
+  map.setView([lat,lng],17);
+  const di=L.divIcon({html:'<div class="my-dot"></div>',className:'',iconSize:[14,14],iconAnchor:[7,7]});
+  if(!myMarker)myMarker=L.marker([lat,lng],{icon:di}).addTo(map);
+  else myMarker.setLatLng([lat,lng]);
+  if(!locName)geo(lat,lng);
+}
+function onErr(e){
+  $('gps-badge').textContent=e.code===1?'권한거부':'GPS오류';
+  $('gps-badge').className='gps warn';
+  if(e.code===1)toast('📍 위치 권한을 허용해주세요',3000);
+}
+async function geo(lat,lng){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ko`);
+    const d=await r.json();const a=d.address;
+    locName=[a.city||a.county||'',a.suburb||a.neighbourhood||''].filter(Boolean).join(' ')||d.display_name.split(',')[0];
+  }catch(e){locName=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;}
+}
+
+function endSession(){
+  if(!running){toast('▶ 시작을 먼저 눌러주세요');return;}
+  clearInterval(timerRef);timerRef=null;
+  if(watchId!=null)navigator.geolocation.clearWatch(watchId);watchId=null;
+  endTime=new Date();running=false;save();showRoute();
+}
+function goBack(){
+  running=true;endTime=null;
+  $('btn-start').disabled=true;$('btn-end').disabled=false;$('rdot').className='rdot on';
+  show('session');
+  timerRef=setInterval(()=>{elapsed++;const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%10===0)save();},1000);
+  startGPS();
+}
+
+function showRoute(){
+  $('cr-name').textContent=name;
+  $('cr-date').textContent=fdate(startTime);
+  $('cr-start').textContent=ftime(startTime);
+  $('cr-end').textContent=ftime(endTime);
+  $('cr-dur').textContent=fmt(elapsed);
+  $('cr-dist').textContent=(distM/1000).toFixed(2);
+  $('cr-count').textContent=total();
+  $('cr-loc').textContent='📍 '+(locName||'위치 정보 없음');
+  $('cr-fdate').textContent=startTime.toLocaleDateString('ko-KR');
+  show('capture-route');
+  setTimeout(()=>{
+    if(capMap){capMap.remove();capMap=null;}
+    const c=path.length>0?[path[Math.floor(path.length/2)].lat,path[Math.floor(path.length/2)].lng]:[37.5665,126.978];
+    capMap=L.map('cap-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false}).setView(c,16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(capMap);
+    if(path.length>1){const cp=L.polyline(path.map(p=>[p.lat,p.lng]),{color:'#00b87a',weight:5,opacity:.9}).addTo(capMap);capMap.fitBounds(cp.getBounds(),{padding:[28,28]});}
+    if(path.length>0)L.marker([path[0].lat,path[0].lng],{icon:L.divIcon({html:'<div class="dot-cap" style="background:#00b87a"></div>',className:'',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(capMap);
+    if(path.length>1){const l=path[path.length-1];L.marker([l.lat,l.lng],{icon:L.divIcon({html:'<div class="dot-cap" style="background:#ff5252"></div>',className:'',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(capMap);}
+    setTimeout(()=>capMap.invalidateSize(),100);
+  },200);
+}
+
+/* ── 종류별 개수 수정 모달 ── */
+// 모달 내 임시 counts
+let tempCounts={};
+
+function editCount(){
+  // 현재 활성 counts 복사
+  tempCounts=Object.assign({},activeCounts());
+  buildModalGrid();
+  updateModalTotal();
+  $('modal').classList.add('on');
+}
+function buildModalGrid(){
+  const g=$('modal-grid');g.innerHTML='';
+  TYPES.forEach(t=>{
+    const row=document.createElement('div');
+    row.className='modal-type-row';
+    row.innerHTML=`
+      <span class="modal-type-icon">${t.icon}</span>
+      <span class="modal-type-name">${t.name}</span>
+      <div class="modal-type-ctrl">
+        <button class="ctrl-btn" onclick="adjustTemp('${t.id}',-1)">−</button>
+        <span class="ctrl-num" id="mt-${t.id}">${tempCounts[t.id]}</span>
+        <button class="ctrl-btn" onclick="adjustTemp('${t.id}',1)">+</button>
+      </div>`;
+    g.appendChild(row);
+  });
+}
+function adjustTemp(id,delta){
+  tempCounts[id]=Math.max(0,(tempCounts[id]||0)+delta);
+  $('mt-'+id).textContent=tempCounts[id];
+  updateModalTotal();
+}
+function updateModalTotal(){
+  const t=Object.values(tempCounts).reduce((a,b)=>a+b,0);
+  $('modal-total').textContent=t;
+}
+function closeModal(){$('modal').classList.remove('on');}
+function saveModal(){
+  // tempCounts를 editedCounts로 저장
+  editedCounts=Object.assign({},tempCounts);
+  // 경로 화면 개수 업데이트
+  $('cr-count').textContent=total();
+  closeModal();
+  toast('✅ 개수 수정됐어요');
+  save();
+}
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal();});
+
+function goPhoto(){
+  $('cp-name').textContent=name;
+  $('cp-date').textContent=fdate(startTime);
+  $('cp-loc').textContent='📍 '+(locName||'위치 정보 없음');
+  $('cp-total').textContent=total()+'개';
+  $('cp-fdate').textContent=startTime.toLocaleDateString('ko-KR');
+  renderBars();show('capture-photo');
+}
+function renderBars(){
+  const el=$('cp-bars');el.innerHTML='';
+  const ac=activeCounts();
+  const sorted=TYPES.map(t=>({...t,n:ac[t.id]})).filter(t=>t.n>0).sort((a,b)=>b.n-a.n);
+  if(!sorted.length){el.innerHTML='<div style="color:#6b9a7e;font-size:12px;text-align:center;padding:6px">수집 기록 없음</div>';return;}
+  const max=sorted[0].n;
+  sorted.forEach(t=>{
+    const r=document.createElement('div');r.className='bar-row';
+    r.innerHTML=`<span class="bar-lbl">${t.icon} ${t.name}</span><div class="bar-track"><div class="bar-fill" style="width:0" data-w="${Math.round(t.n/max*100)}%"></div></div><span class="bar-n">${t.n}</span>`;
+    el.appendChild(r);
+  });
+  requestAnimationFrame(()=>el.querySelectorAll('.bar-fill').forEach(e=>e.style.width=e.dataset.w));
+}
+function onPhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  const img=$('photo-img');img.src=URL.createObjectURL(f);img.style.display='block';
+  $('ph-ph').style.display='none';
+  $('photo-box').style.cssText='margin:6px 14px 0;height:175px;border-radius:10px;overflow:hidden;background:#000;flex-shrink:0;cursor:pointer;border:none';
+  toast('✅ 사진 업로드 완료! 캡쳐하세요 📸');
+}
+
+function goHome(){
+  clearSave();
+  counts=resetCounts();path=[];distM=0;elapsed=0;
+  startTime=null;endTime=null;running=false;
+  lastPos=null;locName='';editedCounts=null;
+  if(timerRef){clearInterval(timerRef);timerRef=null;}
+  if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;}
+  if(map){map.remove();map=null;myMarker=null;}
+  if(capMap){capMap.remove();capMap=null;}
+  $('photo-img').style.display='none';$('photo-img').src='';
+  $('ph-ph').style.display='flex';
+  $('photo-box').style.cssText='';
+  $('photo-input').value='';
+  $('name-input').value='';$('begin-btn').disabled=true;
+  show('home');
+}
+</script>
+</body>
+</html>
