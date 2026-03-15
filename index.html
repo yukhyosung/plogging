@@ -176,6 +176,7 @@ html,body{font-family:var(--sans);background:var(--bg);color:var(--text);height:
     <div class="logo-title"><b>스타줍쓰</b></div>
     <div class="logo-sub">걸으며 줍는 작은 실천</div><div style="font-size:10px;color:#b0cfc0;margin-top:6px;opacity:.5">v1.0.7</div>
   </div>
+  <div class="resume-bar" id="resume-bar" style="display:none;width:100%;background:#e8f9f0;border:1.5px solid var(--green);border-radius:12px;padding:12px 16px;margin-bottom:14px;flex-direction:row;align-items:center;justify-content:space-between;gap:10px"><div style="font-size:13px;font-weight:700;color:var(--green-dark)">🔄 이전 활동 기록이 있어요</div><button onclick="doResume()" style="background:linear-gradient(135deg,var(--green),var(--teal));border:none;border-radius:9px;padding:8px 14px;font-family:var(--sans);font-size:13px;font-weight:700;color:white;cursor:pointer;flex-shrink:0">이어하기</button></div>
   <div class="warn-box">
     ⚠️ 탭 닫으면 기록이 사라져요!
     <span>카톡 갔다오거나 화면 꺼지는 건 괜찮아요</span>
@@ -342,9 +343,81 @@ function hdist(a,b){
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 function save(){
+  try{localStorage.setItem('sj_ts',Date.now().toString());}catch(e){}
+
   try{localStorage.setItem('sj',JSON.stringify({name,counts,path,distM,elapsed,startTime:startTime?startTime.toISOString():null,locName,running,editedCounts}));}catch(e){}
 }
 function clearSave(){try{localStorage.removeItem('sj');}catch(e){}}
+
+// 앱 시작시 복원 체크
+window.addEventListener('load',()=>{
+  try{
+    const raw=localStorage.getItem('sj');
+    if(!raw)return;
+    const d=JSON.parse(raw);
+    if(!d||!d.name||!d.startTime||!d.running)return;
+    // 저장된지 3시간 이내만 복원
+    const ts=parseInt(localStorage.getItem('sj_ts')||'0');
+    if(Date.now()-ts>3*60*60*1000)return;
+    const bar=document.getElementById('resume-bar');
+    bar.style.display='flex';
+  }catch(e){}
+});
+
+function doResume(){
+  try{
+    const raw=localStorage.getItem('sj');
+    if(!raw){toast('복원할 기록이 없어요');return;}
+    const d=JSON.parse(raw);
+
+    // 상태 복원
+    name=d.name;
+    counts=d.counts||resetCounts();
+    path=d.path||[];
+    distM=d.distM||0;
+    elapsed=d.elapsed||0;
+    startTime=new Date(d.startTime);
+    locName=d.locName||'';
+    editedCounts=d.editedCounts||null;
+    running=true; // 바로 실행 상태로
+
+    // UI 세팅
+    $('sess-name').textContent=name+'님의 플로깅';
+    $('t-start').textContent=ftime(startTime);
+    $('s-dist').textContent=(distM/1000).toFixed(2);
+    $('s-count').textContent=total();
+    $('btn-start').disabled=true;
+    $('btn-end').disabled=false;
+    $('rdot').className='rdot on';
+
+    buildGrid();
+    TYPES.forEach(t=>{ $('tc-'+t.id).textContent=counts[t.id]||0; });
+    show('session');
+    initMap();
+
+    // 경로 복원해서 지도에 그리기
+    if(path.length>0){
+      path.forEach(p=>poly.addLatLng([p.lat,p.lng]));
+      const last=path[path.length-1];
+      map.setView([last.lat,last.lng],17);
+    }
+
+    // 타이머: startTime 기준으로 즉시 재개 (끊긴 시간 포함)
+    if(timerRef)clearInterval(timerRef);
+    timerRef=setInterval(()=>{
+      elapsed=Math.round((Date.now()-startTime.getTime())/1000);
+      const t=fmt(elapsed);
+      $('s-time').textContent=t;
+      $('t-elapsed').textContent=t;
+      if(elapsed%5===0)save();
+    },1000);
+
+    // GPS 즉시 재연결
+    startGPS();
+
+    toast('✅ 이어하기 완료! 경로가 이어집니다 🌿',3000);
+  }catch(e){toast('복원 실패. 새로 시작해주세요');}
+}
 
 $('name-input').addEventListener('input',e=>{name=e.target.value.trim();$('begin-btn').disabled=!name;});
 
@@ -388,7 +461,7 @@ function startTracking(){
   $('t-start').textContent=ftime(startTime);
   $('btn-start').disabled=true;$('btn-end').disabled=false;$('rdot').className='rdot on';
   if(timerRef)clearInterval(timerRef);
-  timerRef=setInterval(()=>{elapsed=Math.round((Date.now()-startTime.getTime())/1000);const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%10===0)save();},1000);
+  timerRef=setInterval(()=>{elapsed=Math.round((Date.now()-startTime.getTime())/1000);const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%5===0)save();},1000);
   toast('▶ 플로깅 시작! 화이팅 🌿');save();
 }
 
@@ -442,7 +515,7 @@ function goBack(){
   running=true;endTime=null;
   $('btn-start').disabled=true;$('btn-end').disabled=false;$('rdot').className='rdot on';
   show('session');
-  timerRef=setInterval(()=>{elapsed=Math.round((Date.now()-startTime.getTime())/1000);const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%10===0)save();},1000);
+  timerRef=setInterval(()=>{elapsed=Math.round((Date.now()-startTime.getTime())/1000);const t=fmt(elapsed);$('s-time').textContent=t;$('t-elapsed').textContent=t;if(elapsed%5===0)save();},1000);
   startGPS();
 }
 
