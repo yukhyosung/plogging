@@ -249,7 +249,7 @@ html,body{font-family:var(--sans);background:var(--bg);color:var(--text);height:
   <div class="cap-foot"><span id="cr-fdate"></span><b>스타줍쓰</b></div>
   <div class="cap-acts">
     <button class="back-btn" onclick="goBack()">← 다시</button>
-    <button class="next-btn" onclick="goPhoto()">다음: 사진 인증 →</button>
+    <button class="next-btn" onclick="askCapRoute()">다음: 사진 인증 →</button>
   </div>
 </div>
 
@@ -287,7 +287,19 @@ html,body{font-family:var(--sans);background:var(--bg);color:var(--text);height:
   <div class="cp-foot"><span id="cp-fdate"></span><b>스타줍쓰</b></div>
   <div class="cp-acts cap-acts">
     <button class="back-btn" onclick="show('capture-route')">← 경로</button>
-    <button class="next-btn" onclick="goHome()">🏠 홈으로</button>
+    <button class="next-btn" onclick="askCapPhoto()">🏠 홈으로</button>
+  </div>
+</div>
+
+<!-- 캡쳐 확인 팝업 -->
+<div class="modal-bg" id="cap-confirm-modal">
+  <div class="modal">
+    <h3>📸 캡쳐 하셨나요?</h3>
+    <p id="cap-confirm-msg">경로 화면을 캡쳐했는지 확인해주세요!</p>
+    <div class="modal-btns">
+      <button class="mc" onclick="closecapConfirm()">아직요 (돌아가기)</button>
+      <button class="mo" onclick="confirmCapDone()">네, 캡쳐했어요!</button>
+    </div>
   </div>
 </div>
 
