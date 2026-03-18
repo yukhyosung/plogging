@@ -608,6 +608,29 @@ function saveModal(){
 }
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal();});
 
+// 캡쳐 확인 팝업
+let capConfirmNext=null;
+function askCapRoute(){
+  capConfirmNext='photo';
+  document.getElementById('cap-confirm-msg').textContent='경로 화면을 캡쳐하셨나요?';
+  document.getElementById('cap-confirm-modal').classList.add('on');
+}
+function askCapPhoto(){
+  capConfirmNext='home';
+  document.getElementById('cap-confirm-msg').textContent='사진 인증 화면을 캡쳐하셨나요?';
+  document.getElementById('cap-confirm-modal').classList.add('on');
+}
+function closecapConfirm(){
+  document.getElementById('cap-confirm-modal').classList.remove('on');
+  capConfirmNext=null;
+}
+function confirmCapDone(){
+  document.getElementById('cap-confirm-modal').classList.remove('on');
+  if(capConfirmNext==='photo') goPhoto();
+  else if(capConfirmNext==='home') goHome();
+  capConfirmNext=null;
+}
+
 function goPhoto(){
   $('cp-name').textContent=name;
   $('cp-date').textContent=fdate(startTime);
