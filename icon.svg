@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 배경 -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00b87a"/>
+      <stop offset="100%" style="stop-color:#00c4a7"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+  
+  <!-- 별 -->
+  <text x="256" y="210" font-size="180" text-anchor="middle" dominant-baseline="middle">⭐</text>
+  
+  <!-- 스타줍쓰 텍스트 -->
+  <text x="256" y="360" font-size="72" font-weight="900" text-anchor="middle" fill="white" font-family="sans-serif" letter-spacing="-2">스타줍쓰</text>
+</svg>

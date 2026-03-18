@@ -1,0 +1,17 @@
+{
+  "name": "스타줍쓰 플로깅",
+  "short_name": "스타줍쓰",
+  "description": "걸으며 줍는 작은 실천",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f2f8f5",
+  "theme_color": "#00b87a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
