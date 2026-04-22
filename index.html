@@ -156,7 +156,7 @@ html,body{font-family:var(--sans);background:var(--bg);color:var(--text);height:
 .modal-type-ctrl{display:flex;align-items:center;gap:8px}
 .ctrl-btn{width:28px;height:28px;border:none;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
 .ctrl-btn:active{background:var(--green);color:white}
-.ctrl-num{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text);min-width:24px;text-align:center}
+.ctrl-num{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text);min-width:36px;width:36px;text-align:center;border:none;background:transparent;outline:none;padding:0}
 .modal-total{background:var(--green-light);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .modal-total-lbl{font-size:13px;color:var(--sub);font-weight:600}
 .modal-total-val{font-size:20px;font-family:var(--mono);font-weight:700;color:var(--green-dark)}
@@ -581,15 +581,20 @@ function buildModalGrid(){
       <span class="modal-type-name">${t.name}</span>
       <div class="modal-type-ctrl">
         <button class="ctrl-btn" onclick="adjustTemp('${t.id}',-1)">−</button>
-        <span class="ctrl-num" id="mt-${t.id}">${tempCounts[t.id]}</span>
+        <input class="ctrl-num" id="mt-${t.id}" type="number" min="0" max="999" value="${tempCounts[t.id]}" inputmode="numeric" pattern="[0-9]*" onchange="setTemp('${t.id}',this.value)" oninput="setTemp('${t.id}',this.value)">
         <button class="ctrl-btn" onclick="adjustTemp('${t.id}',1)">+</button>
       </div>`;
     g.appendChild(row);
   });
 }
+function setTemp(id,val){
+  const v=parseInt(val)||0;
+  tempCounts[id]=Math.max(0,Math.min(999,v));
+  updateModalTotal();
+}
 function adjustTemp(id,delta){
   tempCounts[id]=Math.max(0,(tempCounts[id]||0)+delta);
-  $('mt-'+id).textContent=tempCounts[id];
+  $('mt-'+id).value=tempCounts[id];
   updateModalTotal();
 }
 function updateModalTotal(){
